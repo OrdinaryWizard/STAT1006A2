@@ -5,101 +5,116 @@ date: "2026-09-19"
 ---
 
 
-```{r}
-df <- read.csv('Life Expectancy Data.csv')
-df <- na.omit(df)
+# Import
 
-# few NAs exist, dropped rows with NAs
-
-# List all variables
-(cols <- colnames(df))
-```
-```{r}
-# check data type of all columns
-sapply(cols, function(x) {
-  class(df[[x]])
-})
-
-# only Country and Status are categorical variables
+```{r import}
+df.raw <- read.csv('Life Expectancy Data.csv')
 ```
 
-```{r}
-# frequency of categorical variables\
 
-## countries
-country_freq_table <- table(df$Country)
-plot(country_freq_table)
+# Data cleaning
 
-## status
-status_freq_table <- table(df$Status)
-plot(status_freq_table)
-```
-```{r}
-# Identify numeric columns
-numeric_cols <- sapply(df, is.numeric)
+```{r cleaning}
+# Drop rows with NAs (few exist) and remove all outliers
+df <- na.omit(df.raw)
 
-# Function to identify outliers using the 1.5 * IQR rule
+# Identify outliers with the 1.5 * IQR rule
 is_outlier <- function(x) {
   q <- quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
   iqr <- IQR(x, na.rm = TRUE)
   x < (q[1] - 1.5 * iqr) | x > (q[2] + 1.5 * iqr)
 }
 
-# Identify rows with an outlier in any column
+numeric_cols <- sapply(df, is.numeric)
 outlier_rows <- apply(sapply(df[, numeric_cols], is_outlier), 1, any)
 
-# Summary of rows before and after
 cat("Rows before removing outliers:", nrow(df), "\n")
 cat("Rows with outliers removed:", sum(outlier_rows), "\n")
-
-# Remove rows containing outliers
-df.no.outliers <- df[!outlier_rows, ]
-
-cat("Rows remaining:", nrow(df.no.outliers), "\n")
+df <- df[!outlier_rows, ]
+cat("Rows remaining:", nrow(df), "\n")
 ```
 
-```{r}
-(numeric.cols <- df.no.outliers[, sapply(df.no.outliers, is.numeric)])
-sapply(numeric.cols, function(col) {
-  col
-})
+
+# Categorical variables
+
+Only `Country` and `Status` are categorical.
+
+```{r categorical-country}
+## countries
+country_freq_table <- table(df$Country)
+plot(country_freq_table)
 ```
 
-```{r}
+```{r categorical-status}
+## status
+status_freq_table <- table(df$Status)
+plot(status_freq_table)
+```
+
+
+# Numerical variables
+
+```{r numeric-cols}
+(numeric.cols <- df[, sapply(df, is.numeric)])
+```
+
+```{r numeric-scatterplots}
 lapply(names(numeric.cols), function(column_name) {
   plot(numeric.cols[[column_name]],
        numeric.cols$Life.expectancy,
        xlab = column_name,
        ylab = "Life Expectancy")
 })
-
-# percentage expenditure and GDP can be log transformed
 ```
 
-```{r}
+`percentage.expenditure` and `GDP` can be log transformed.
+
+
+# Log transformations
+
+```{r log-percentage-expenditure}
 plot(
-  Life.expectancy ~ percentage.expenditure, 
-  data=df.no.outliers, 
-  main="Percentage Expenditure (Non-transformed) vs Life Expectancy",
-  xlab="Percentage Expenditure",
-  ylab="Life Expectancy"
+  Life.expectancy ~ percentage.expenditure,
+  data = df,
+  main = "Percentage Expenditure (Non-transformed) vs Life Expectancy",
+  xlab = "Percentage Expenditure",
+  ylab = "Life Expectancy"
 )
 
 plot(
-  Life.expectancy ~ log(percentage.expenditure), 
-  data=df.no.outliers, 
-  main="Percentage Expenditure (Log transformed) vs Life Expectancy",
-  xlab="log(Percentage Expenditure)",
-  ylab="Life Expectancy"
+  Life.expectancy ~ log(percentage.expenditure),
+  data = df,
+  main = "Percentage Expenditure (Log transformed) vs Life Expectancy",
+  xlab = "log(Percentage Expenditure)",
+  ylab = "Life Expectancy"
+)
+```
+
+```{r log-gdp}
+plot(
+  Life.expectancy ~ GDP,
+  data = df,
+  main = "GDP (Non-transformed) vs Life Expectancy",
+  xlab = "GDP",
+  ylab = "Life Expectancy"
+)
+
+plot(
+  Life.expectancy ~ I(log(GDP)),
+  data = df,
+  main = "GDP (Log transformed) vs Life Expectancy",
+  xlab = "log(GDP)",
+  ylab = "Life Expectancy"
 )
 ```
 
 
-```{r}
-lm.GDP.nontrans <- lm(Life.expectancy ~ GDP, data=df.no.outliers)
+# Regression models
+
+```{r lm-gdp}
+lm.GDP.nontrans <- lm(Life.expectancy ~ GDP, data = df)
 summary(lm.GDP.nontrans)
 
-lm.GDP.trans <- lm(Life.expectancy ~ I(log(GDP)), data=df.no.outliers)
+lm.GDP.trans <- lm(Life.expectancy ~ I(log(GDP)), data = df)
 summary(lm.GDP.trans)
 ```
-

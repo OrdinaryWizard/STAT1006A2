@@ -4,36 +4,13 @@ output: word_document
 date: "2026-09-19"
 ---
 
-
-# Import
+# Import & Data Cleaning
 
 ```{r import}
 df.raw <- read.csv('Life Expectancy Data.csv')
+df.raw <- na.omit(df.raw)
+df <- df.raw
 ```
-
-
-# Data cleaning
-
-```{r cleaning}
-# Drop rows with NAs (few exist) and remove all outliers
-df <- na.omit(df.raw)
-
-# Identify outliers with the 1.5 * IQR rule
-is_outlier <- function(x) {
-  q <- quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
-  iqr <- IQR(x, na.rm = TRUE)
-  x < (q[1] - 1.5 * iqr) | x > (q[2] + 1.5 * iqr)
-}
-
-numeric_cols <- sapply(df, is.numeric)
-outlier_rows <- apply(sapply(df[, numeric_cols], is_outlier), 1, any)
-
-cat("Rows before removing outliers:", nrow(df), "\n")
-cat("Rows with outliers removed:", sum(outlier_rows), "\n")
-df <- df[!outlier_rows, ]
-cat("Rows remaining:", nrow(df), "\n")
-```
-
 
 # Categorical variables
 
@@ -51,7 +28,6 @@ status_freq_table <- table(df$Status)
 plot(status_freq_table)
 ```
 
-
 # Numerical variables
 
 ```{r numeric-cols}
@@ -66,55 +42,53 @@ lapply(names(numeric.cols), function(column_name) {
        ylab = "Life Expectancy")
 })
 ```
-
-`percentage.expenditure` and `GDP` can be log transformed.
-
-
-# Log transformations
-
-```{r log-percentage-expenditure}
-plot(
-  Life.expectancy ~ percentage.expenditure,
-  data = df,
-  main = "Percentage Expenditure (Non-transformed) vs Life Expectancy",
-  xlab = "Percentage Expenditure",
-  ylab = "Life Expectancy"
-)
-
-plot(
-  Life.expectancy ~ log(percentage.expenditure),
-  data = df,
-  main = "Percentage Expenditure (Log transformed) vs Life Expectancy",
-  xlab = "log(Percentage Expenditure)",
-  ylab = "Life Expectancy"
-)
+`percentage.expenditure`, ``
+```{r log-transform-elgibility}
+lapply(names(numeric.cols), function(column_name) {
+  par(mfrow=c(1, 2))
+  
+  lm.preTransform <- lm(
+    numeric.cols$Life.expectancy ~ numeric.cols[[column_name]]
+  )
+  
+  lm.postTransform <- lm(
+    numeric.cols$Life.expectancy ~ log1p(numeric.cols[[column_name]])
+  )
+  
+  lm.preTrans.pval <- summary(lm.preTransform)$coefficients[,4]
+  lm.postTrans.pval <- summary(lm.postTransform)$coefficients[,4]
+  
+  plot(numeric.cols[[column_name]],
+       numeric.cols$Life.expectancy,
+       xlab = column_name,
+       ylab = "Life Expectancy",
+       main = lm.preTrans.pval
+       )
+  plot(log1p(numeric.cols[[column_name]]),
+     numeric.cols$Life.expectancy,
+     xlab = cat("log(",column_name,")"),
+     ylab = "Life Expectancy",
+     main = lm.postTrans.pval
+  )
+})
 ```
 
-```{r log-gdp}
-plot(
-  Life.expectancy ~ GDP,
-  data = df,
-  main = "GDP (Non-transformed) vs Life Expectancy",
-  xlab = "GDP",
-  ylab = "Life Expectancy"
-)
+```{r}
+# Identify outliers with the 1.5 * IQR rule
+is_outlier <- function(x) {
+  q <- quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
+  iqr <- IQR(x, na.rm = TRUE)
+  x < (q[1] - 1.5 * iqr) | x > (q[2] + 1.5 * iqr)
+}
 
-plot(
-  Life.expectancy ~ I(log(GDP)),
-  data = df,
-  main = "GDP (Log transformed) vs Life Expectancy",
-  xlab = "log(GDP)",
-  ylab = "Life Expectancy"
-)
+numeric_cols <- sapply(df, is.numeric)
+outlier_rows <- apply(sapply(df[, numeric_cols], is_outlier), 1, any)
+
+cat("Rows before removing outliers:", nrow(df), "\n")
+cat("Rows with outliers removed:", sum(outlier_rows), "\n")
+df <- df[!outlier_rows, ]
+cat("Rows remaining:", nrow(df), "\n")
 ```
 
 
-# Regression models
 
-```{r lm-gdp}
-lm.GDP.nontrans <- lm(Life.expectancy ~ GDP, data = df)
-summary(lm.GDP.nontrans)
-
-lm.GDP.trans <- lm(Life.expectancy ~ I(log(GDP)), data = df)
-summary(lm.GDP.trans)
-```

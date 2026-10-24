@@ -1,0 +1,92 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+df.raw <- read.csv('Life Expectancy Data.csv')
+df.raw <- na.omit(df.raw)
+df <- df.raw
+
+cols.to.transform <- c("thinness.5.9.years", 
+                       "thinness.1.19.years", 
+                       "Population", 
+                       "GDP", 
+                       "HIV.AIDS", 
+                       "under.five.deaths", 
+                       "Measles",
+                       "percentage.expenditure", 
+                       "infant.deaths")
+
+for (col in cols.to.transform) {
+  df[[col]] = log1p(df[[col]])
+}
+
+(df.numeric <- df[, sapply(df, is.numeric)])
+```
+
+```{r}
+lapply(names(df.numeric), function(column_name) {
+  plot(df.numeric[[column_name]],
+       df$Life.expectancy,
+       xlab = column_name,
+       ylab = "Life Expectancy")
+})
+```
+```{r}
+# 1. Define the outlier flagging function (returns TRUE if outlier)
+is_outlier <- function(x) {
+  if (!is.numeric(x)) return(rep(FALSE, length(x)))
+  q1 <- quantile(x, 0.25, na.rm = TRUE)
+  q3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  return(x < (q1 - 1.5 * iqr) | x > (q3 + 1.5 * iqr))
+}
+
+# 2. Map across columns to create an outlier matrix
+outlier_matrix <- apply(df, 2, is_outlier)
+
+# 3. Keep rows where the total count of outliers is 0
+df.clean <- df[rowSums(outlier_matrix) == 0, ]
+
+nrow(df)
+nrow(df.clean)
+```
+
+```{r}
+df.clean.numeric <- df.clean[, sapply(df.clean, is.numeric)]
+
+lapply(names(df.clean.numeric), function(column_name) {
+  plot(df.clean.numeric[[column_name]],
+       df.clean.numeric$Life.expectancy,
+       xlab = column_name,
+       ylab = "Life Expectancy")
+})
+```
+```{r}
+lm.full <- lm(Life.expectancy ~ ., data=df.clean)
+summary(lm.full)
+step(lm.full, direction="backward")
+```
+
+```{r}
+lm.opt <- lm(formula = Life.expectancy ~ Country + Year + Adult.Mortality + 
+    Hepatitis.B + Measles + under.five.deaths + HIV.AIDS + thinness.5.9.years + 
+    Income.composition.of.resources + Schooling, data = df.clean)
+
+summary(lm.opt)
+```
+```{r}
+lm.full.numeric <- lm(formula = Life.expectancy ~ ., data=df.clean.numeric)
+step(lm.full.numeric, direction="backward")
+```
+```{r}
+lm.opt.numeric <- lm(formula = Life.expectancy ~ Year + Adult.Mortality + infant.deaths + 
+    percentage.expenditure + under.five.deaths + Total.expenditure + 
+    Diphtheria + HIV.AIDS + GDP + thinness.5.9.years + Income.composition.of.resources + 
+    Schooling, data = df.clean.numeric)
+summary(lm.opt.numeric)
+```
+
+

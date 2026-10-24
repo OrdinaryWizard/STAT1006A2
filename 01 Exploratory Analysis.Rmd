@@ -35,8 +35,9 @@ plot(status_freq_table)
 ```
 
 ```{r numeric-scatterplots}
+
 lapply(names(df.numeric), function(column_name) {
-  plot(numeric.cols$Life.expectancy~numeric.cols[[column_name]],
+  plot(df.numeric$Life.expectancy~df.numeric[[column_name]],
        xlab = column_name,
        ylab = "Life Expectancy")
 })
@@ -44,7 +45,7 @@ lapply(names(df.numeric), function(column_name) {
  `thinness.5.9.years`, `thinness.1.19.years`, `population`, `GDP`, `HIV.AIDS`, `under.five.deaths`, `Measles`, `percentage.expenditure`, `infant.deaths`, are chosen for log transform.
 
 ```{r log-transform-elgibility}
-lapply(names(numeric.cols), function(column_name) {
+lapply(names(df.numeric), function(column_name) {
   par(mfrow=c(1,2))
   fit <- lm(df$Life.expectancy ~ df[[column_name]])
   plot(fit, which=1, main=column_name)
@@ -52,8 +53,13 @@ lapply(names(numeric.cols), function(column_name) {
 })
 ```
 ```{r}
-chosen.col <- "Adult.Mortality"
-plot(df$Life.expectancy ~ df[[chosen.col]])
-plot(df$Life.expectancy ~ log1p(df[[chosen.col]]))
+cor_matrix <- cor(df.numeric, use = "pairwise.complete.obs")
+
+high.cor.vars <- subset(as.data.frame(as.table(cor_matrix)), (Freq>0.9) & (Var1 != Var2))
+
+# under.five.deaths approx = infant.deaths
+# GDP approx = percentage.expenditure
+# thinness5.9.years approx = thinness.1.19.years
 ```
+
 

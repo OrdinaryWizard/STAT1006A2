@@ -1,0 +1,26 @@
+---
+title: "STAT1006 A2 Report"
+author: "Aydon Joseph, Dulana Parahitiyawa, James Van Jaarsveldt"
+date: "2026-10-24"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+# Exploratory
+
+# Simple Linear Regression
+
+# Multiple Linear Regression
+
+## Method
+
+The 
+
+# Results
+
+# Discussion

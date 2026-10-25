@@ -135,3 +135,18 @@ colSums(flag)
 ```
 
 No outlier / influential points.
+
+# Model evaluation (PRESS and RMSEP)
+
+```{r}
+model.arena <- list(lm.opt = lm.opt, lm.full = lm.full)
+model.comp  <- data.frame()
+
+for (name in names(model.arena)) {
+  model <- model.arena[[name]]
+  model.comp[name, "PRESS"] <- press(model)
+  model.comp[name, "RMSE"]  <- sqrt(sum(residuals(model)^2) / nobs(model))
+}
+model.comp
+```
+

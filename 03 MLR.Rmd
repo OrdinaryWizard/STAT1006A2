@@ -139,14 +139,10 @@ No outlier / influential points.
 # Model evaluation (PRESS and RMSEP)
 
 ```{r}
-model.arena <- list(lm.opt = lm.opt, lm.full = lm.full)
-model.comp  <- data.frame()
+lm.opt.press <- press(lm.opt)
+lm.opt.rmse <- sqrt(sum( (lm.opt$residuals)^2 ) / nobs(lm.opt))
 
-for (name in names(model.arena)) {
-  model <- model.arena[[name]]
-  model.comp[name, "PRESS"] <- press(model)
-  model.comp[name, "RMSE"]  <- sqrt(sum(residuals(model)^2) / nobs(model))
-}
-model.comp
+lm.opt.press
+lm.opt.rmse
 ```
 

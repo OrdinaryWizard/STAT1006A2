@@ -56,6 +56,7 @@ drop_cols <- c(
   "thinness.5.9.years"    
 )
 df[drop_cols] <- NULL
+df
 ```
 
 Note: `na.omit()` was already applied above, so no further filtering is needed here.
@@ -140,7 +141,11 @@ No outlier / influential points.
 
 ```{r}
 lm.opt.press <- press(lm.opt)
-lm.opt.rmse <- sqrt(sum( (lm.opt$residuals)^2 ) / nobs(lm.opt))
+
+lm.opt.predictions <- predict(lm.opt, newdata=test_df)
+lm.opt.residuals.new <- lm.opt.predictions - test_df$Life.expectancy
+
+lm.opt.rmse <- sqrt( sum( lm.opt.residuals.new^2 ) / length(lm.opt.predictions))
 
 lm.opt.press
 lm.opt.rmse

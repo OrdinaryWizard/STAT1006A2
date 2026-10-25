@@ -2,7 +2,9 @@
 title: "STAT1006 A2 Report"
 author: "Aydon Joseph, Dulana Parahitiyawa, James Van Jaarsveldt"
 date: "2026-10-24"
-output: word_document
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -11,16 +13,87 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-# Exploratory
+# Exploratory Analysis
 
-# Simple Linear Regression
+# Method
 
-# Multiple Linear Regression
+## Simple Linear Regression (SLR)
 
-## Method
+## Multiple Linear Regression (MLR)
 
-The 
+```{r echo=FALSE}
+df.raw <- read.csv("Life Expectancy Data.csv")
+df <- na.omit(df.raw)
+
+log_cols <- c(
+  "thinness.5.9.years",
+  "thinness.1.19.years",
+  "Population",
+  "GDP",
+  "HIV.AIDS",
+  "under.five.deaths",
+  "Measles",
+  "percentage.expenditure",
+  "infant.deaths"
+)
+for (col in log_cols) {
+  df[[col]] <- log1p(df[[col]])
+}
+
+drop_cols <- c(
+  "Country",              
+  "infant.deaths",        
+  "percentage.expenditure",
+  "thinness.5.9.years"    
+)
+df[drop_cols] <- NULL
+
+df.numeric <- df[, sapply(df, is.numeric)]
+```
+
+
+### Import and Data Manipulation
+
+The data was imported from the `Life Expectancy Data.csv` file, and NAs were removed using `na.omit`. The columns chosen for log transform were transformed, and the columns to be dropped were dropped (outlined in [Exploratory]). All remaining numeric columns were plotted against `Life.expectancy` to verify correct import and transformation. The clean data is named `df`.
+
+```{r echo=FALSE}
+par(mfrow=c(2, 2))
+
+for (column_name in names(df.numeric)) {
+    plot(df.numeric[[column_name]],
+       df$Life.expectancy,
+       xlab = column_name,
+       ylab = "Life Expectancy")
+}
+```
+
+
+### Train-Test split
+
+The cleaned and transformed data (`df`) is split into training and testing using random selection with a set seed for reproducibility.
+```{r echo=FALSE}
+set.seed(67)
+
+n        <- nrow(df)
+train_idx <- sample(n, size = floor(0.7 * n))
+train_df  <- df[train_idx, ]
+test_df   <- df[-train_idx, ]
+```
+
+### Model fitting and selection
+First a full model was fitted, including all the predictors:
+
+```{r full-model}
+lm.full <- lm(Life.expectancy ~ ., data = train_df)
+lm.full$coefficients
+```
+
+Backwa
 
 # Results
+
+## SLR
+
+## MLR
 
 # Discussion

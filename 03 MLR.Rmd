@@ -1,0 +1,137 @@
+---
+title: "Multiple Linear Regression — Life Expectancy"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+Install packages if you don't have them:
+
+```{r install-packages, eval=FALSE}
+install.packages(c("DAAG", "leaps"))
+```
+
+```{r load-packages}
+library(DAAG)
+library(leaps)
+```
+
+# Data preparation
+
+Read the CSV and drop rows with any missing value.
+
+```{r read-data}
+df.raw <- read.csv("Life Expectancy Data.csv")
+df <- na.omit(df.raw)
+```
+
+Log-transform the right-skewed variables, then drop redundant or unusable columns.
+
+```{r transform-and-drop}
+log_cols <- c(
+  "thinness.5.9.years",
+  "thinness.1.19.years",
+  "Population",
+  "GDP",
+  "HIV.AIDS",
+  "under.five.deaths",
+  "Measles",
+  "percentage.expenditure",
+  "infant.deaths"
+)
+for (col in log_cols) {
+  df[[col]] <- log1p(df[[col]])
+}
+
+drop_cols <- c(
+  "Country",              
+  "infant.deaths",        
+  "percentage.expenditure",
+  "thinness.5.9.years"    
+)
+df[drop_cols] <- NULL
+```
+
+Note: `na.omit()` was already applied above, so no further filtering is needed here.
+
+```{r numeric-cols}
+(df.numeric <- df[, sapply(df, is.numeric)])
+```
+
+# Predictor scatterplots
+
+```{r scatterplots}
+lapply(names(df.numeric), function(column_name) {
+  plot(df.numeric[[column_name]],
+       df$Life.expectancy,
+       xlab = column_name,
+       ylab = "Life Expectancy")
+})
+```
+
+No rows were removed manually — influential-point screening is done after fitting (see Diagnostics).
+
+# Training and test split
+
+```{r split}
+set.seed(67)
+
+n        <- nrow(df)
+train_idx <- sample(n, size = floor(0.7 * n))
+train_df  <- df[train_idx, ]
+test_df   <- df[-train_idx, ]
+```
+
+# Model fitting
+
+## Full model (all predictors)
+
+```{r full-model}
+lm.full <- lm(Life.expectancy ~ ., data = train_df)
+summary(lm.full)
+```
+
+## Optimised model (backward stepwise selection)
+
+```{r step-model}
+lm.opt <- step(lm.full, direction = "backward")
+summary(lm.opt)
+```
+
+# Diagnostics
+
+We go with `lm.opt`.
+
+```{r diagnostic-plots}
+## Four standard plots: Resid vs Fitted, Q-Q, Scale-Location, Resid vs Leverage
+plot(lm.opt, main = "Optimised Model")
+
+par(mfrow = c(1, 1))
+hist(lm.opt$residuals, main = "Residual Histogram", xlab = "Residuals of lm.opt")
+```
+
+Flag potential outliers / influential points on three criteria: leverage (`hatvalues`), studentised residuals (`rstudent`), and Cook's distance.
+
+```{r influence-check}
+n_obs <- nobs(lm.opt)
+p     <- length(coef(lm.opt))
+
+flag <- data.frame(
+  hat  = hatvalues(lm.opt)      > 2 * p / n_obs,
+  rstu = abs(rstudent(lm.opt))  > 3,
+  cook = cooks.distance(lm.opt) > 4 / n_obs
+)
+
+## Points flagged on all three criteria
+which(rowSums(flag) == 3)
+
+colSums(flag)
+```
+
+No outlier / influential points.

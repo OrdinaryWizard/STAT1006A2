@@ -4,6 +4,6 @@
 
 !*.Rmd
 !*.rmd
-!Life Expectancy Data.csv
+!'Life Expectancy Data.csv'
 
 !.gitignore
